@@ -1,1 +1,19 @@
+python3 - <<'PY'
+import os
+import anthropic
+
+print("Key loaded:", bool(os.getenv("ANTHROPIC_API_KEY")))
+
+client = anthropic.Anthropic()
+
+r = client.messages.create(
+    model=os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+    max_tokens=50,
+    messages=[
+        {"role": "user", "content": "Reply with exactly: API WORKS"}
+    ],
+)
+
+print(r.content[0].text)
+PY
 {"canonical_name":"photoparoxysmal response on eeg","confidence":"high"}

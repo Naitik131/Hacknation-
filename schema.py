@@ -6,9 +6,19 @@ NodeType = Literal["disease", "gene", "variant", "mechanism", "phenotype",
                    "patient_group", "paper", "study", "asset", "person",
                    "grant", "topic"]
 EvidenceType = Literal["observed", "inferred", "hypothesis"]
-Predicate = Literal["causes", "associated_with", "has_phenotype",
-                    "disrupts_pathway", "treats", "studied_in",
-                    "authored", "funded_by", "reports_trial", "tagged_with"]
+Predicate = Literal[
+    "causes",
+    "associated_with",
+    "has_phenotype",
+    "disrupts_pathway",
+    "treats",
+    "studied_in",
+    "involves_intervention",
+    "authored",
+    "funded_by",
+    "reports_trial",
+    "tagged_with"
+]
 
 
 class Node(BaseModel):

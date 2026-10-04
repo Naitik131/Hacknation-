@@ -1,0 +1,1 @@
+{"decision":"accept_direct","confidence":"high","reason":"The quote explicitly states that CLN3 \"is linked to Batten disease.\" The relationship CLN3--associated_with-->Batten disease is directly supported by this statement. Both entities are explicitly named in the quote, and the predicate \"associated_with\" accurately captures the \"linked to\" language used by the authors."}
