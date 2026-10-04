@@ -1,0 +1,122 @@
+[
+  {
+    "surface_form": "autofluorescent storage material",
+    "canonical_name": "intracellular accumulation of autofluorescent lipopigment storage material",
+    "canonical_id": "HP:0003204",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "The NCLs are grouped together owing to their broadly shared clinical presentations and the presence of autofluorescent storage material."
+  },
+  {
+    "surface_form": "neurodegenerative",
+    "canonical_name": "neurodegenerative disease",
+    "canonical_id": "HP:0002180",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "The neuronal ceroid lipofuscinoses (NCLs) are a group of inherited neurodegenerative lysosomal storage disorders (LSDs), traditionally grouped together based on shared clinical symptoms."
+  },
+  {
+    "surface_form": "neurodegeneration",
+    "canonical_name": "neurodegeneration",
+    "canonical_id": "HP:0002180",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "an autosomal recessive neurodegenerative LSD"
+  },
+  {
+    "surface_form": "supratentorial atrophy",
+    "canonical_name": "supratentorial atrophy",
+    "canonical_id": "HP:0002059",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "CLN2, CLN5, and CLN7 diseases showed predominant cerebellar-over-cerebral atrophy"
+  },
+  {
+    "surface_form": "cerebellar atrophy",
+    "canonical_name": "cerebellar atrophy",
+    "canonical_id": "HP:0001272",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "CLN2, CLN5, and CLN7 diseases showed predominant cerebellar-over-cerebral atrophy"
+  },
+  {
+    "surface_form": "emotional and behavioral dysregulation",
+    "canonical_name": "emotional dysregulation",
+    "canonical_id": "HP:0100851",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Psychiatric symptoms are highly prevalent across NCL forms and encompass a broad clinical spectrum, including early emotional and behavioral dysregulation, neurodevelopmental-like features, anxiety and depressive symptoms, obsessive-compulsive phenomena, and psychotic-spectrum manifestations."
+  },
+  {
+    "surface_form": "sensory dysfunction",
+    "canonical_name": "somatic sensory dysfunction",
+    "canonical_id": "HP:0003474",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Their expression varies according to age and disease stage and reflects a multifactorial interplay between neurodegeneration, disrupted neurodevelopment, autonomic and sensory dysfunction, cognitive decline, genetic modifiers, and environmental factors."
+  },
+  {
+    "surface_form": "psychiatric symptoms",
+    "canonical_name": "psychiatric disturbances",
+    "canonical_id": "HP:0000708",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Furthermore, psychiatric assessment tools are inconsistently applied, predominantly in CLN3 disease, and terminology remains heterogeneous and non-standardized, hindering cross-study comparability and robust phenotypic characterization."
+  },
+  {
+    "surface_form": "lipofuscin accumulation",
+    "canonical_name": "increased cerebral lipofuscin",
+    "canonical_id": "HP:0011813",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "ectopic CHIP improves lysosomal function in CLN4 i3Neurons and effectively alleviates lipofuscin accumulation and cell death in a Drosophila CLN4 disease model"
+  },
+  {
+    "surface_form": "progressive neurodegenerative",
+    "canonical_name": "progressive neurodegenerative disorder",
+    "canonical_id": "HP:0002180",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "The Neuronal Ceroid Lipofuscinoses are a group of severe and progressive neurodegenerative disorders, which generally present during childhood."
+  },
+  {
+    "surface_form": "myoclonus",
+    "canonical_name": "myoclonus",
+    "canonical_id": "HP:0001336",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Since age 12 years, he had reported involuntary jerks and tremulousness, sometimes with falls, particularly with bright lights."
+  },
+  {
+    "surface_form": "cognitive impairment",
+    "canonical_name": "cognitive impairment",
+    "canonical_id": "HP:0100543",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Examination identified cognitive impairment with action myoclonus."
+  },
+  {
+    "surface_form": "white matter changes",
+    "canonical_name": "white matter abnormalities",
+    "canonical_id": "HP:0002500",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "MR scan of the brain showed white matter changes suggesting leucodystrophy with cortical atrophy."
+  },
+  {
+    "surface_form": "cortical atrophy",
+    "canonical_name": "cortical atrophy",
+    "canonical_id": "HP:0002120",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "MR scan of the brain showed white matter changes suggesting leucodystrophy with cortical atrophy."
+  },
+  {
+    "surface_form": "photoparoxysmal responses",
+    "canonical_name": "photoparoxysmal response on eeg",
+    "canonical_id": "HP:0010852",
+    "entity_type": "phenotype",
+    "confidence": "high",
+    "quote": "Electroencephalogram showed generalised epileptiform abnormalities with photoparoxysmal responses, including at low frequencies (1 Hz)."
+  }
+]

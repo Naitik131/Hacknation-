@@ -1,0 +1,215 @@
+[
+  {
+    "surface_form": "CHIP",
+    "canonical_name": "chip",
+    "canonical_id": "HGNC:11427",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "CLN3",
+    "canonical_name": "cln3",
+    "canonical_id": "HGNC:2074",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "CLN4 disease",
+    "canonical_name": "cln4",
+    "canonical_id": "MONDO:0008083",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "CLN6",
+    "canonical_name": "cln6",
+    "canonical_id": "HGNC:2077",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "CLN7",
+    "canonical_name": "cln7 disease",
+    "canonical_id": "MONDO:0012588",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "CLN8",
+    "canonical_name": "cln8 neuronal ceroid lipofuscinosis",
+    "canonical_id": "MONDO:0010830",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "DNAJC5",
+    "canonical_name": "dnajc5",
+    "canonical_id": "HGNC:16235",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "Kufs disease type A",
+    "canonical_name": "kuf's disease type a",
+    "canonical_id": "MONDO:0008768",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "NCL mutations",
+    "canonical_name": "ncl",
+    "canonical_id": "HGNC:7667",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "Neuronal Ceroid Lipofuscinosis",
+    "canonical_name": "neuronal ceroid lipofuscinosis",
+    "canonical_id": "MONDO:0016295",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "PSENEN",
+    "canonical_name": "psenen",
+    "canonical_id": "HGNC:30100",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "SNCA",
+    "canonical_name": "snca",
+    "canonical_id": "HGNC:11138",
+    "entity_type": "gene",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "cerebellar atrophy",
+    "canonical_name": "cerebellar atrophy",
+    "canonical_id": "HP:0001272",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "cognitive impairment",
+    "canonical_name": "cognitive impairment",
+    "canonical_id": "HP:0100543",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "cortical atrophy",
+    "canonical_name": "cortical atrophy",
+    "canonical_id": "HP:0002120",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "emotional and behavioral dysregulation",
+    "canonical_name": "emotional dysregulation",
+    "canonical_id": "HP:0100851",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "myoclonus",
+    "canonical_name": "myoclonus",
+    "canonical_id": "HP:0001336",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "neurodegeneration",
+    "canonical_name": "neurodegeneration",
+    "canonical_id": "HP:0002180",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "neurodegenerative condition",
+    "canonical_name": "neurodegenerative disease",
+    "canonical_id": "MONDO:0005559",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "neuronal ceroid lipofuscinoses",
+    "canonical_name": "neuronal ceroid lipofuscinosis",
+    "canonical_id": "MONDO:0016295",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "Neuronal Ceroid Lipofuscinosis",
+    "canonical_name": "neuronal ceroid lipofuscinosis",
+    "canonical_id": "MONDO:0016295",
+    "entity_type": "disease",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "photoparoxysmal responses",
+    "canonical_name": "photoparoxysmal response on eeg",
+    "canonical_id": "HP:0010852",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "progressive neurodegenerative",
+    "canonical_name": "progressive neurodegeneration",
+    "canonical_id": "HP:0002344",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "psychiatric symptoms",
+    "canonical_name": "psychiatric disturbances",
+    "canonical_id": "HP:0000708",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "seizures",
+    "canonical_name": "seizures",
+    "canonical_id": "HP:0001250",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "supratentorial atrophy",
+    "canonical_name": "supratentorial atrophy",
+    "canonical_id": "HP:0002059",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "surface_form": "white matter changes",
+    "canonical_name": "white matter alterations",
+    "canonical_id": "HP:0002500",
+    "entity_type": "phenotype",
+    "confidence": "high"
+  },
+  {
+    "entity_type": "disease",
+    "surface_form": "CLN2 disease",
+    "canonical_id": "MONDO:0008769",
+    "confidence": "high"
+  },
+  {
+    "entity_type": "disease",
+    "surface_form": "CLN3 disease",
+    "canonical_id": "MONDO:0008767",
+    "confidence": "high"
+  },
+  {
+    "entity_type": "disease",
+    "surface_form": "CLN5 disease",
+    "canonical_id": "MONDO:0009745",
+    "confidence": "high"
+  },
+  {
+    "entity_type": "disease",
+    "surface_form": "CLN6 disease",
+    "canonical_id": "MONDO:0008768",
+    "confidence": "high"
+  }
+]
