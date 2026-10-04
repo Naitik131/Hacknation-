@@ -1,0 +1,2 @@
+{"id":"registry:orphanet:311059","type":"asset","label":"Batten Disease Neuronal Ceroid Lipofuscinosis (NCL) Patient Registry","synonyms":[],"attrs":{"resource_type":"patient_registry","source":"Orphanet","source_url":"https://www.orpha.net/en/research-trials/registry/311059","country":"United Kingdom","retrieval_status":"verified_by_http"}}
+{"id":"disease:neuronal_ceroid_lipofuscinosis","type":"disease","label":"Neuronal Ceroid Lipofuscinosis","synonyms":[],"attrs":{"source":"Orphanet","source_url":"https://www.orpha.net/en/research-trials/registry/311059"}}

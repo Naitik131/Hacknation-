@@ -143,6 +143,11 @@ TYPE_CONFIG = {
         "shape": "dot",
         "size": 14,
     },
+    "organization": {
+        "color": "#f97316",
+        "shape": "box",
+        "size": 18,
+    },
     "grant": {
         "color": "#a78bfa",
         "shape": "box",
@@ -194,8 +199,21 @@ def node_title(node):
         f"ID: {escape(str(node_id))}",
     ]
 
+    if node_type == "asset":
+        resource_type = attrs.get("resource_type")
+        if resource_type:
+            lines.append(
+                f"Resource type: {escape(str(resource_type))}"
+            )
+
     if attrs:
-        for key, value in list(attrs.items())[:8]:
+        shown = 0
+        for key, value in attrs.items():
+            # Avoid repeating source information that is already
+            # displayed by the generic node metadata.
+            if key == "source" and len(lines) > 3:
+                continue
+
             value_string = str(value)
 
             if len(value_string) > 300:
@@ -204,6 +222,10 @@ def node_title(node):
             lines.append(
                 f"{escape(str(key))}: {escape(value_string)}"
             )
+
+            shown += 1
+            if shown >= 8:
+                break
 
     return "<br>".join(lines)
 
@@ -361,6 +383,11 @@ for node in nodes:
             "shape": config["shape"],
             "size": config["size"],
             "type": node.get("type", "other"),
+            "source": (
+                node.get("attrs", {}).get("source")
+                or node.get("attrs", {}).get("source_name")
+                or ""
+            ),
         }
     )
 
@@ -418,6 +445,8 @@ for index, edge in enumerate(edges):
             "title": edge_title,
             "predicate": predicate,
             "status": status,
+            "evidence_type": evidence_type,
+            "source": source,
             "arrows": "to",
         }
     )
@@ -468,7 +497,7 @@ html = """
     content="width=device-width, initial-scale=1.0"
 >
 
-<title>Rare Disease Knowledge Graph</title>
+<title>Rare Disease Knowledge Graph | Research Ecosystem</title>
 
 <script
     src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js">
@@ -670,7 +699,8 @@ button.primary:hover {
 
         <div class="subtitle">
             Progressive exploration of diseases, genes,
-            phenotypes, studies, papers and research assets.
+            phenotypes, studies, papers, registries, organizations
+            and research assets.
         </div>
 
         <div class="section">
@@ -732,6 +762,32 @@ button.primary:hover {
                     </div>
                 </div>
 
+                <div class="stat">
+                    <div
+                        class="stat-number"
+                        id="studyCount"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-label">
+                        Studies / projects
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <div
+                        class="stat-number"
+                        id="assetCount"
+                    >
+                        0
+                    </div>
+
+                    <div class="stat-label">
+                        Registries / assets
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -779,7 +835,15 @@ button.primary:hover {
                     class="legend-dot"
                     style="background:#06b6d4"
                 ></span>
-                Study
+                Study / NIH project
+            </div>
+
+            <div class="legend-item">
+                <span
+                    class="legend-dot"
+                    style="background:#f97316"
+                ></span>
+                Organization
             </div>
 
             <div class="legend-item">
@@ -787,7 +851,7 @@ button.primary:hover {
                     class="legend-dot"
                     style="background:#84cc16"
                 ></span>
-                Research asset
+                Research asset / registry
             </div>
 
             <div class="legend-item">
@@ -823,7 +887,9 @@ button.primary:hover {
             <br><br>
 
             The graph starts small instead of displaying
-            all 1,900+ nodes at once.
+            the full graph at once. Expand NIH projects to see
+            principal investigators and organizations, and expand
+            a disease to reveal patient registries and studies.
 
         </div>
 
@@ -1012,14 +1078,32 @@ function updateStats() {
     const nodeCount =
         visibleNodes.get().length;
 
+    const visibleNodeRows = visibleNodes.get();
+
     const edgeCount =
         visibleEdges.get().length;
+
+    const studyCount =
+        visibleNodeRows.filter(function(node) {
+            return node.type === "study";
+        }).length;
+
+    const assetCount =
+        visibleNodeRows.filter(function(node) {
+            return node.type === "asset";
+        }).length;
 
     document.getElementById("nodeCount").textContent =
         String(nodeCount);
 
     document.getElementById("edgeCount").textContent =
         String(edgeCount);
+
+    document.getElementById("studyCount").textContent =
+        String(studyCount);
+
+    document.getElementById("assetCount").textContent =
+        String(assetCount);
 
 }
 
@@ -1426,9 +1510,16 @@ network.on(
             return;
         }
 
+        const source =
+            node.source ? " | " + node.source : "";
+
         setStatus(
             "Selected: " +
-            (node.label || nodeId)
+            (node.label || nodeId) +
+            " [" +
+            (node.type || "unknown") +
+            "]" +
+            source
         );
 
     }
@@ -1456,7 +1547,7 @@ if (
 network.fit();
 
 setStatus(
-    "Showing disease neighborhood. Select a node and expand."
+    "Showing disease neighborhood. Expand studies, projects, and registries to reveal the research ecosystem."
 );
 
 </script>

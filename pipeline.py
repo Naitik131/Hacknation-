@@ -36,7 +36,7 @@ DATA = Path("data")
 # IMPORTANT:
 # Keep this as v2 so your existing successful Anthropic extraction
 # cache continues to be reused.
-CACHE_TAG = "v6"
+CACHE_TAG = "v7"
 
 
 EntityType = Literal[
@@ -566,6 +566,27 @@ For EACH candidate:
 19. Do not use outside biomedical knowledge to decide whether an
     entity is a pathway or mechanism. Use the wording and role in
     the abstract.
+IMPORTANT FOR has_phenotype:
+
+The grammatical/entity subject of the quoted statement must be the entity that has the phenotype.
+
+Do NOT accept:
+gene → has_phenotype → phenotype
+merely because the gene is mentioned inside a disease phenotype description.
+
+For example:
+
+"Parkinson disease is characterized by abnormal intracellular accumulation of SNCA."
+
+supports:
+
+Parkinson disease → has_phenotype → abnormal intracellular accumulation
+
+It does NOT support:
+
+SNCA → has_phenotype → abnormal intracellular accumulation.
+
+Likewise, if a disease is described as having a phenotype involving accumulation, expression, mutation, or alteration of a gene/protein, do not reverse that relationship and assign the phenotype to the gene/protein.
 
 Example 1:
 
