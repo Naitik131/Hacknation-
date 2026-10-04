@@ -2,24 +2,48 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
-NodeType = Literal["disease", "gene", "variant", "mechanism", "phenotype",
-                   "patient_group", "paper", "study", "asset", "person",
-                   "grant", "topic"]
+NodeType = Literal[
+    "disease",
+    "gene",
+    "variant",
+    "mechanism",
+    "pathway",
+    "phenotype",
+    "patient_group",
+    "paper",
+    "study",
+    "asset",
+    "person",
+    "grant",
+    "topic",
+]
 EvidenceType = Literal["observed", "inferred", "hypothesis"]
 Predicate = Literal[
     "causes",
     "associated_with",
     "has_phenotype",
     "disrupts_pathway",
+    "therapeutic_effect",
     "treats",
     "studied_in",
     "involves_intervention",
+    "tests",
     "authored",
     "funded_by",
     "reports_trial",
-    "tagged_with"
-]
+    "tagged_with",
 
+    # ClinVar
+    "has_variant",
+    "variant_in_gene",
+    "variant_associated_with",
+    "has_molecular_consequence",
+
+    # Mechanisms / pathways
+    "involved_in_pathway",
+    "has_mechanism",
+    "affects_mechanism",
+]
 
 class Node(BaseModel):
     id: str                       # stable ID: MONDO:..., HGNC:..., HP:..., PMID:...

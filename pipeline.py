@@ -36,13 +36,14 @@ DATA = Path("data")
 # IMPORTANT:
 # Keep this as v2 so your existing successful Anthropic extraction
 # cache continues to be reused.
-CACHE_TAG = "v3"
+CACHE_TAG = "v6"
 
 
 EntityType = Literal[
     "gene",
     "disease",
     "phenotype",
+    "mechanism",
     "pathway",
     "molecule",
     "treatment",
@@ -59,12 +60,16 @@ class Candidate(BaseModel):
     subject_type: EntityType
 
     predicate: Literal[
-        "causes",
+         "causes",
         "associated_with",
         "has_phenotype",
         "disrupts_pathway",
         "treats",
-        "studied_in",
+        "therapeutic_effect",
+    "studied_in",
+        "has_mechanism",
+        "affects_mechanism",
+        "involved_in_pathway",
     ]
 
     object: str
@@ -119,19 +124,23 @@ class EvidenceReview(BaseModel):
 # ORIGINAL EXTRACTION PROMPT
 # ============================================================
 
-PROMPT = """Extract relationships between genes, diseases, clinical features, molecules,
-pathways and treatments from this abstract.
+PROMPT = """Extract relationships between genes, diseases, clinical features,
+molecules, mechanisms, pathways and treatments from this abstract.
 
-Rules:
+GENERAL RULES:
 
-- Only claims the abstract explicitly states.
-- Never add outside knowledge.
+- Only extract claims explicitly supported by the abstract.
+- Never use outside biomedical knowledge.
 - `quote` must be ONE sentence copied verbatim from the abstract.
 - The quote must contain the exact original words from the abstract.
 - Entity names must be bare names with no extra words.
 - Use official gene symbols where possible.
+- If uncertain about an entity or relationship, DO NOT extract it.
+- It is better to omit a relationship than create an incorrect one.
+- If nothing qualifies, return an empty list.
 
-Entity types:
+
+ENTITY TYPES:
 
 gene
 - Only use a specific, named gene.
@@ -165,15 +174,38 @@ phenotype
   "clinical presentation"
   "pathological changes"
 
+mechanism
+- A biological mechanism, dysfunction, process, defect, or functional alteration
+  that explains how a disease, gene, variant, or molecule produces an effect.
+- Examples:
+  lysosomal dysfunction
+  impaired autophagy
+  defective lysosomal degradation
+  altered membrane trafficking
+  lysosomal egress defect
+- A mechanism is NOT simply a symptom or phenotype.
+- A mechanism is NOT a ClinVar molecular consequence such as:
+  "intron variant"
+  "missense variant"
+  "frameshift variant".
+
 pathway
-- Only use pathway for a named biological pathway or biological process.
+- Only use pathway for a named biological pathway, metabolic pathway,
+  or biological process when the abstract treats it as a pathway/process
+  in which an entity participates or which an entity disrupts.
 - Examples:
   autophagy
   ubiquitin-dependent microautophagy
+  glycerophospholipid metabolism
+  glycerophospholipid catabolism
+  lysosomal pathway
+- Do NOT automatically classify every biological process as a pathway.
+- Do NOT classify a mechanism as a pathway merely because it contains
+  words such as "dysfunction", "defect", "impairment", or "alteration".
 
 molecule
-- Only use for a specific molecular entity, protein, metabolite,
-  lipid, enzyme, or other named molecular entity.
+- Only use for a specific molecular entity, protein, metabolite, lipid,
+  enzyme, or other named molecular entity.
 
 treatment
 - Use for an intervention or therapeutic strategy.
@@ -183,64 +215,197 @@ treatment
 other
 - Avoid unless the entity genuinely does not fit another category.
 
-Predicates:
+
+PREDICATES:
 
 causes
 associated_with
 has_phenotype
+has_mechanism
+affects_mechanism
 disrupts_pathway
+involved_in_pathway
 treats
 studied_in
 
-Evidence type:
 
-observed
-- Directly reported experimental or clinical observation.
+EDGE DIRECTION RULES:
 
-inferred
-- Authors' interpretation or a relationship supported by context.
+Every edge is directional.
+The subject must be the entity performing or having the relationship.
 
-hypothesis
-- Speculation or proposed mechanism.
-
-If you are uncertain about an entity or relationship,
-DO NOT extract it.
-
-It is better to omit a relationship than create an incorrect one.
-
-If nothing qualifies, return an empty list.
-
-
-CRITICAL EDGE DIRECTION RULES:
-
-Every edge is directional. The subject must be the entity performing or having the relationship.
+therapeutic_effect: a treatment, gene, molecule, or other intervention shows a beneficial therapeutic effect in a disease or disease model, without necessarily establishing that it is an established treatment.
 
 causes:
     cause -> disease/effect
-    Example: CLN6 -> causes -> Kufs disease type A
+
+Example:
+    CLN6 -> causes -> Kufs disease type A
+
 
 has_phenotype:
     disease -> phenotype
-    Example: Kufs disease type A -> has_phenotype -> myoclonus
+
+Example:
+    Kufs disease type A -> has_phenotype -> myoclonus
+
+
+has_mechanism:
+    disease/gene/molecule -> mechanism
+
+Use when a disease, gene, molecule, or other biological entity is
+explicitly described as having, involving, or being associated with
+a biological mechanism.
+
+Examples:
+    CLN3 disease -> has_mechanism -> lysosomal dysfunction
+    CLN3 -> has_mechanism -> impaired autophagy
+
+The OBJECT MUST have entity type `mechanism`.
+
+Do NOT use:
+    CLN3 -> has_mechanism -> glycerophospholipid metabolism
+if glycerophospholipid metabolism is being described as a pathway.
+
+Only extract this relationship when the paper explicitly supports it.
+
+
+affects_mechanism:
+    gene/variant/molecule -> mechanism
+
+Use when a gene, variant, molecule, or other biological entity is
+explicitly described as affecting, altering, impairing, activating,
+inhibiting, or otherwise modifying a biological mechanism.
+Use treats only when the source supports an actual treatment/therapy relationship.
+Use therapeutic_effect when an intervention shows improvement, rescue, alleviation, protection, or therapeutic benefit in a disease or disease model, but the source does not establish it as a treatment.
+Examples:
+    CLN3 -> affects_mechanism -> lysosomal dysfunction
+    GPDs -> affects_mechanism -> lysosomal phospholipase activity
+
+The OBJECT MUST have entity type `mechanism`.
+
+Do NOT use `affects_mechanism` when the object is a named pathway.
+
 
 disrupts_pathway:
     gene/molecule -> pathway
-    Example: CLN6 -> disrupts_pathway -> lysosomal pathway
+
+Use only when the abstract explicitly states that an entity disrupts,
+impairs, inhibits, alters, or causes dysfunction of a pathway.
+
+Example:
+    CLN3 -> disrupts_pathway -> lysosomal pathway
+
+The OBJECT MUST have entity type `pathway`.
+
+
+involved_in_pathway:
+    gene/molecule/mechanism -> pathway
+
+Use when an entity is explicitly described as participating in,
+being required for, being involved in, or functioning within a pathway.
+
+Examples:
+    CLN3 -> involved_in_pathway -> glycerophospholipid metabolism
+    PLBD2 -> involved_in_pathway -> glycerophospholipid catabolism
+
+The OBJECT MUST have entity type `pathway`.
+
+Do NOT use `involved_in_pathway` when the object is actually a
+specific mechanism such as "lysosomal dysfunction".
+
+
+IMPORTANT DISTINCTION BETWEEN MECHANISMS AND PATHWAYS:
+
+Use `mechanism` when the phrase describes HOW something is altered,
+defective, dysfunctional, impaired, or functioning abnormally.
+
+Use `pathway` when the phrase describes a biological pathway,
+metabolic pathway, or biological process in which an entity participates.
+
+Examples:
+
+"lysosomal dysfunction"
+    -> mechanism
+
+"impaired autophagy"
+    -> mechanism
+
+"defective lysosomal degradation"
+    -> mechanism
+
+"glycerophospholipid metabolism"
+    -> pathway
+
+"glycerophospholipid catabolism"
+    -> pathway
+
+"autophagy pathway"
+    -> pathway
+
+Do not confuse these two entity types.
+
 
 treats:
     treatment/therapy/drug/vector -> disease
-    Example: gene therapy vector -> treats -> CLN5 disease
-    NEVER: disease -> treats -> gene therapy vector
+
+Example:
+    gene therapy vector -> treats -> CLN5 disease
+
+NEVER:
+    disease -> treats -> gene therapy vector
+
 
 studied_in:
     entity -> study/paper
-    Example: CLN5 -> studied_in -> study
+
+Example:
+    CLN5 -> studied_in -> study
+
 
 associated_with:
     entity -> entity
-    Direction can be arbitrary, but must reflect the wording of the source.
 
-NEVER reverse a relationship merely because the disease is the main topic of the sentence.
+Direction can be arbitrary, but must reflect the wording of the source.
+
+
+IMPORTANT RELATIONSHIP SELECTION:
+
+If the abstract says an entity HAS, INVOLVES, or is associated with
+a biological dysfunction/process:
+    use has_mechanism
+
+If the abstract says an entity ALTERS, IMPAIRS, INHIBITS, ACTIVATES,
+MODULATES, or otherwise changes a biological mechanism:
+    use affects_mechanism
+
+If the abstract says an entity DISRUPTS or impairs a biological pathway:
+    use disrupts_pathway
+
+If the abstract says an entity PARTICIPATES IN, IS REQUIRED FOR,
+or is INVOLVED IN a biological pathway:
+    use involved_in_pathway
+
+Do not choose a relationship merely because a word such as
+"affects", "involved", or "dysfunction" appears in the sentence.
+The complete sentence and its meaning must support the relationship.
+
+
+MECHANISM AND PATHWAY SAFETY RULES:
+
+- Do NOT classify symptoms or clinical phenotypes as mechanisms.
+- Do NOT classify ClinVar molecular consequences as mechanisms.
+- Do NOT classify "intron variant", "missense variant",
+  "frameshift variant", etc. as mechanisms.
+- Do NOT infer mechanisms from general biomedical knowledge.
+- Do NOT infer pathway membership from general biomedical knowledge.
+- Do NOT invent pathway names.
+- Do NOT convert a phenotype into a mechanism.
+- Do NOT convert a molecular consequence into a mechanism.
+- If the abstract does not clearly distinguish a mechanism from a pathway,
+  omit the relationship rather than guessing.
+
+
 IMPORTANT TREATMENT EXTRACTION RULE:
 
 When the abstract says that a treatment, therapy, drug, vector, or
@@ -251,17 +416,20 @@ subject and the disease MUST be the object.
 Examples:
 
 "gene therapy vector for CLN5 disease"
-→ gene therapy vector | treats | CLN5 disease
+-> gene therapy vector | treats | CLN5 disease
 
 "enzyme replacement therapy for CLN2"
-→ enzyme replacement therapy | treats | CLN2
+-> enzyme replacement therapy | treats | CLN2
 
 "patients with CLN2 were treated with enzyme replacement therapy"
-→ enzyme replacement therapy | treats | CLN2
+-> enzyme replacement therapy | treats | CLN2
 
 NEVER output:
+
 CLN5 disease | treats | gene therapy vector
+
 CLN2 disease | treats | enzyme replacement therapy
+
 
 When one treatment is explicitly stated to apply to multiple diseases,
 create one edge for EACH disease.
@@ -272,12 +440,13 @@ Example:
 
 must produce:
 
-gene therapy vector → treats → CLN1 disease
-gene therapy vector → treats → CLN2 disease
-gene therapy vector → treats → CLN3 disease
-gene therapy vector → treats → CLN5 disease
+gene therapy vector -> treats -> CLN1 disease
+gene therapy vector -> treats -> CLN2 disease
+gene therapy vector -> treats -> CLN3 disease
+gene therapy vector -> treats -> CLN5 disease
 
-IMPORTANT:
+
+IMPORTANT LIST EXTRACTION RULE:
 
 Biomedical abstracts frequently express relationships using compact
 list structures.
@@ -294,13 +463,36 @@ gene therapy vector -> treats -> CLN3 disease
 gene therapy vector -> treats -> CLN5 disease
 gene therapy vector -> treats -> CLN6 disease
 
+
+EVIDENCE TYPE:
+
+observed
+- Directly reported experimental or clinical observation.
+
+inferred
+- Authors' interpretation or a relationship clearly supported by context.
+
+hypothesis
+- Speculation or proposed mechanism.
+
+Only use `inferred` when the abstract clearly establishes the
+relationship through surrounding context.
+
+Do not use outside knowledge to create an inference.
+
+
+NEVER REVERSE A RELATIONSHIP:
+
+Never reverse a relationship merely because the disease is the
+main topic of the sentence.
+
+The grammatical and semantic direction of the abstract must determine
+the subject and object.
+
+For has_phenotype, do not infer that a gene or molecule has a phenotype merely because a disease is characterized by that gene/molecule's accumulation or alteration. The subject must itself be the entity that the source establishes as having the phenotype.
 Abstract:
 """
 
-
-# ============================================================
-# EVIDENCE REVIEW PROMPT
-# ============================================================
 
 EVIDENCE_PROMPT = """You are a strict biomedical evidence verifier.
 
@@ -318,26 +510,64 @@ For EACH candidate:
 4. ACCEPT_INFERRED only when the surrounding abstract clearly establishes
    that the relationship applies to the stated subject and object.
 
-REJECT only when the abstract provides meaningful evidence AGAINST
-the relationship, or when the candidate clearly contradicts the text.
+5. REJECT only when the abstract provides meaningful evidence AGAINST
+   the relationship, or when the candidate clearly contradicts the text.
 
-If the relationship is reasonably supported by the abstract but the
-exact wording is indirect, accept it as `inferred` with medium or low
-confidence.
+6. If the relationship is reasonably supported by the abstract but the
+   exact wording is indirect, accept it as `inferred` with medium or
+   low confidence.
 
-Do not reject merely because the relationship is expressed through
-a list, parenthetical phrase, abbreviation, grammatical reference,
-or nearby sentence.
+7. Do not use outside biomedical knowledge.
 
-6. Do not use outside biomedical knowledge, but you MAY resolve
-   grammatical references, abbreviations, disease-name variants,
-   parenthetical lists, and obvious list membership from the abstract.
+8. You MAY resolve:
+   - grammatical references
+   - abbreviations
+   - disease-name variants
+   - parenthetical lists
+   - obvious list membership
+   - obvious references to the same entity established elsewhere
+     in the abstract
 
-7. Do not reject merely because the exact subject or object is absent from
-   the quoted sentence if the surrounding abstract clearly establishes
-   the referent.
+9. Do not reject merely because the exact subject or object is absent
+   from the quoted sentence if the surrounding abstract clearly
+   establishes the referent.
 
-Important example:
+10. Do not reject merely because a relationship is expressed through
+    a list, parenthetical phrase, abbreviation, or nearby sentence.
+
+11. Check the ENTITY TYPES as well as the relationship.
+
+12. A `has_mechanism` relationship requires:
+       subject = disease/gene/molecule/other
+       object = mechanism
+
+13. An `affects_mechanism` relationship requires:
+       subject = gene/variant/molecule/other
+       object = mechanism
+
+14. A `disrupts_pathway` relationship requires:
+       subject = gene/molecule/other
+       object = pathway
+
+15. An `involved_in_pathway` relationship requires:
+       subject = gene/molecule/mechanism/other
+       object = pathway
+
+16. Do NOT accept a mechanism relationship merely because the object
+    is a biological process. Determine whether the abstract describes
+    that process as a mechanism or as a pathway/process.
+
+17. Do NOT classify clinical phenotypes as mechanisms.
+
+18. Do NOT classify molecular variant consequences such as
+    "intron variant", "missense variant", or "frameshift variant"
+    as mechanisms.
+
+19. Do not use outside biomedical knowledge to decide whether an
+    entity is a pathway or mechanism. Use the wording and role in
+    the abstract.
+
+Example 1:
 
 Candidate:
 
@@ -359,7 +589,8 @@ If the abstract does not establish that connection:
 
 REJECT
 
-Another example:
+
+Example 2:
 
 Candidate:
 
@@ -373,18 +604,122 @@ Quote:
 
 ACCEPT_DIRECT
 
-Do not use external biomedical knowledge.
 
-Return exactly one decision for every candidate.
+Example 3:
+
+Candidate:
+
+CLN3
+    --has_mechanism-->
+lysosomal dysfunction
+
+Quote:
+
+"Each form is caused by mutations in a different gene, resulting in
+lysosomal dysfunction."
+
+If the surrounding abstract establishes that this statement refers
+to neuronal ceroid lipofuscinosis:
+
+ACCEPT_INFERRED
+
+The object is a mechanism because the abstract describes
+"lysosomal dysfunction" as the biological dysfunction resulting
+from the disease-causing mutations.
 
 
+Example 4:
 
-The disease name may appear in the list as "CLN5" while the candidate
+Candidate:
+
+CLN3
+    --involved_in_pathway-->
+glycerophospholipid metabolism
+
+Quote:
+
+"Our results show that CLN3 is required for the lysosomal clearance
+of GPDs and reveal Batten disease as a neurodegenerative LSD with a
+defect in glycerophospholipid metabolism."
+
+If the surrounding abstract clearly supports CLN3's role in this
+biological process:
+
+ACCEPT_INFERRED
+
+Do not change the relationship to `has_mechanism` merely because
+the phrase describes biology.
+
+
+Example 5:
+
+Candidate:
+
+CLN3
+    --has_mechanism-->
+glycerophospholipid metabolism
+
+If the abstract treats glycerophospholipid metabolism as a pathway
+or metabolic process rather than a mechanism:
+
+REJECT
+
+The candidate should instead have been represented as:
+
+CLN3
+    --involved_in_pathway-->
+glycerophospholipid metabolism
+
+
+Example 6:
+
+Candidate:
+
+GPDs
+    --affects_mechanism-->
+glycerophospholipid catabolism
+
+Quote:
+
+"GPDs act as potent inhibitors of glycerophospholipid catabolism
+in the lysosome."
+
+If glycerophospholipid catabolism is explicitly treated as a pathway
+or metabolic process rather than a mechanism:
+
+REJECT this candidate as incorrectly typed.
+
+Do NOT reinterpret the entity as a mechanism merely to make the
+candidate pass.
+
+
+Example 7:
+
+Candidate:
+
+CLN3
+    --affects_mechanism-->
+lysosomal dysfunction
+
+Quote:
+
+"CLN3 loss causes lysosomal dysfunction."
+
+If the abstract explicitly establishes that CLN3 loss produces or
+modifies the lysosomal dysfunction:
+
+ACCEPT_DIRECT or ACCEPT_INFERRED depending on wording.
+
+
+The disease name may appear in a list as "CLN5" while the candidate
 uses "CLN5 disease". Treat these as the same entity when the context
 clearly establishes that meaning.
 
 Do not reject a candidate merely because the exact surface form of
 the entity is slightly different.
+
+Return exactly ONE decision for EVERY candidate.
+
 
 Abstract:
 """
@@ -523,6 +858,39 @@ RELATIONSHIP_CUES = {
         "examined in",
         "evaluated in",
         "patients with",
+    ],
+           "has_mechanism": [
+        "mechanism",
+        "mechanism of",
+        "mediated by",
+        "mediated through",
+        "biological mechanism",
+        "pathophysiological mechanism",
+        "molecular mechanism",
+        "cellular mechanism",
+        "dysfunction",
+        "defect in",
+        "impairment of",
+        "impairment in",
+        "deficiency of",
+        "failure of",
+    ],
+
+
+    "affects_mechanism": [
+        "affects",
+        "affected",
+        "alters",
+        "altered",
+        "impairs",
+        "impaired",
+        "inhibits",
+        "inhibited",
+        "activates",
+        "activated",
+        "modulates",
+        "disrupts",
+        "disrupted",
     ],
 }
 
@@ -687,7 +1055,7 @@ quote:
         for d in review.decisions
     }
 
-
+    
 # ============================================================
 # BUILD EDGE
 # ============================================================
@@ -701,6 +1069,7 @@ def make_edge(
     Optional[Edge],
     Optional[str],
 ]:
+    
     if not valid_predicate_direction(c):
         return None, "invalid_predicate_direction"
     subject_id = onto.entity_id(
@@ -743,18 +1112,25 @@ def make_edge(
 
     return edge, None
 
-def valid_predicate_direction(c):
+def valid_predicate_direction(c: Candidate) -> bool:
     if c.predicate == "treats":
-        treatment_types = {"treatment", "molecule", "other"}
-        disease_types = {"disease"}
-
         return (
-            c.subject_type in treatment_types
-            and c.object_type in disease_types
+            c.object_type == "disease"
+            and c.subject_type in {"treatment", "molecule", "other"}
         )
-
-    if c.predicate == "causes":
-        return c.object_type == "disease"
+    if c.predicate == "therapeutic_effect":
+     return (
+        c.subject_type in {
+            "gene",
+            "molecule",
+            "treatment",
+            "other",
+        }
+        and c.object_type in {
+            "disease",
+            "phenotype",
+        }
+    )
 
     if c.predicate == "has_phenotype":
         return (
@@ -762,8 +1138,48 @@ def valid_predicate_direction(c):
             and c.object_type == "phenotype"
         )
 
+    if c.predicate == "causes":
+        return c.object_type in {
+        "disease",
+        "mechanism",
+        "phenotype",
+    }
+
     if c.predicate == "disrupts_pathway":
         return c.object_type == "pathway"
+
+    if c.predicate == "has_mechanism":
+        return (
+            c.subject_type in {
+                "disease",
+                "gene",
+                "molecule",
+                "other",
+            }
+            and c.object_type == "mechanism"
+        )
+
+    if c.predicate == "affects_mechanism":
+        return (
+            c.subject_type in {
+                "gene",
+                "variant",
+                "molecule",
+                "other",
+            }
+            and c.object_type == "mechanism"
+        )
+
+    if c.predicate == "involved_in_pathway":
+        return (
+            c.subject_type in {
+                "gene",
+                "mechanism",
+                "molecule",
+                "other",
+            }
+            and c.object_type == "pathway"
+        )
 
     return True
 
@@ -1105,16 +1521,18 @@ def main(
                 # ------------------------------------------------
                 # ACCEPTED
                 # ------------------------------------------------
+                
+                if decision.decision == "accept_inferred":
+                    final_evidence_type = "inferred"
+                else:
+                    final_evidence_type = decision.evidence_type
 
                 edge, reason = make_edge(
                     c,
-
-                    decision.evidence_type,
-
+                    final_evidence_type,
                     pmid,
-
                     onto,
-                )
+                )   
 
                 if not edge:
 
