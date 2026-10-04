@@ -36,38 +36,41 @@ def norm(s: str) -> str:
 def variants(name: str, etype: str) -> list[str]:
     """
     Generate deterministic variants of an extracted entity name.
+    Only apply transformations that are high-confidence.
     """
-
     n = norm(name)
-
     out = [n]
 
     if etype == "gene":
-
-        # Example:
-        # "CLN3 gene" -> "CLN3"
+        # CLN3 gene -> CLN3
         if n.endswith(" gene"):
-            out.append(n[:-5])
+            out.append(n[:-5].strip())
+
+    elif etype == "disease":
+        # Neuronal ceroid lipofuscinoses -> neuronal ceroid lipofuscinosis
+        if n.endswith("oses"):
+            out.append(n[:-3] + "is")
+
+        # CLN3 Batten disease -> CLN3 disease
+        if n.endswith(" batten disease"):
+            out.append(n[:-14].strip() + " disease")
+
+        # CLN7 neuronal ceroid lipofuscinosis -> CLN7 disease
+        m = re.fullmatch(r"(cln\d+)\s+neuronal ceroid lipofuscinosis", n)
+        if m:
+            out.append(f"{m.group(1)} disease")
+
+        # CLN7 -> CLN7 disease
+        m = re.fullmatch(r"(cln\d+)", n)
+        if m:
+            out.append(f"{m.group(1)} disease")
 
     else:
-
-        # Example:
-        # "lipofuscinoses" -> "lipofuscinosis"
-        if n.endswith("oses"):
-            out.append(
-                n[:-4] + "osis"
-            )
-
-        # Example:
-        # "phenotypes" -> "phenotype"
+        # Simple singular form
         if n.endswith("s") and len(n) > 4:
-            out.append(
-                n[:-1]
-            )
+            out.append(n[:-1])
 
-    # Remove duplicates while preserving order
     return list(dict.fromkeys(out))
-
 
 def provisional_id(
     etype: str,
@@ -249,11 +252,14 @@ class Ontology:
 
         return None
 
-    def entity_id(
-        self,
-        name: str,
-        etype: str,
-    ):
+    def entity_id(self, name, etype):
+    # Gene, disease, phenotype must resolve to canonical ontology IDs.
+        if etype in NAMESPACES:
+            return self.resolve(name, etype)
+
+        # Mechanisms, pathways, molecules, treatments, and other
+        # entities can remain evidence-backed provisional nodes.
+        return provisional_id(etype, name)
 
         # Canonical ontology namespaces
         if etype in NAMESPACES:

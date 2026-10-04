@@ -63,6 +63,29 @@ def make_variant_id(record):
     return None
 
 
+def make_disease_id(condition_name):
+    """
+    Create a deterministic provisional disease ID.
+
+    We deliberately do NOT invent MONDO mappings here.
+    Disease normalization can happen later in the unified graph.
+    """
+    normalized = condition_name.strip().lower()
+
+    normalized = (
+        normalized
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace("-", "_")
+        .replace("(", "")
+        .replace(")", "")
+        .replace(",", "")
+        .replace(":", "")
+    )
+
+    return f"PROV:disease:{normalized}"
+
+
 def main():
     if not INPUT.exists():
         raise FileNotFoundError(
@@ -166,6 +189,131 @@ def main():
             })
 
         # -------------------------------------------------
+        # Clinical assertions
+        #
+        # Variant -> Disease/Condition
+        # -------------------------------------------------
+
+        for assertion in record.get("clinical_assertions", []):
+
+            classification = assertion.get(
+                "germline_classification"
+            )
+
+            review_status = assertion.get(
+                "review_status"
+            )
+
+            # Normalize classification for filtering
+            classification_normalized = (
+                classification.strip().lower()
+                if isinstance(classification, str)
+                else ""
+            )
+
+            # We do not create disease associations from
+            # benign / likely benign assertions.
+            if classification_normalized in {
+                "benign",
+                "likely benign",
+            }:
+                continue
+
+            for condition in assertion.get(
+                "conditions", []
+            ):
+
+                condition_name = condition.get("name")
+                condition_type = condition.get("type")
+
+                if not condition_name:
+                    continue
+
+                condition_name_clean = condition_name.strip()
+
+                if not condition_name_clean:
+                    continue
+
+                # Ignore "Not specified"
+                if condition_name_clean.lower() in {
+                    "not specified",
+                    "unspecified",
+                }:
+                    continue
+
+                # Only use disease conditions
+                if (
+                    condition_type
+                    and condition_type.lower() != "disease"
+                ):
+                    continue
+
+                disease_id = make_disease_id(
+                    condition_name_clean
+                )
+
+                # -------------------------------------------------
+                # Disease node
+                # -------------------------------------------------
+
+                if disease_id not in nodes:
+                    nodes[disease_id] = {
+                        "id": disease_id,
+                        "type": "disease",
+                        "label": condition_name_clean,
+                        "synonyms": [],
+                        "attrs": {
+                            "source": "ClinVar",
+                        },
+                    }
+
+                # -------------------------------------------------
+                # Variant -> Disease
+                # -------------------------------------------------
+
+                edges.append({
+                    "subject": variant_id,
+                    "predicate": "variant_associated_with",
+                    "object": disease_id,
+
+                    "evidence_type": "observed",
+                    "source": "ClinVar",
+
+                    "quote": None,
+                    "extracted_by": "parser",
+                    "date": TODAY,
+
+                    "confidence": 1.0,
+                    "contradicted_by": [],
+
+                    "subject_type": "variant",
+                    "object_type": "disease",
+
+                    "subject_label": (
+                        record.get("variation_name")
+                        or record.get("clinvar_accession")
+                        or variant_id
+                    ),
+
+                    "object_label": condition_name_clean,
+
+                    "attrs": {
+                        "clinical_assertion_id": assertion.get(
+                            "clinical_assertion_id"
+                        ),
+                        "scv": assertion.get("scv"),
+                        "submitter": assertion.get(
+                            "submitter"
+                        ),
+                        "review_status": review_status,
+                        "classification": classification,
+                        "pubmed_ids": assertion.get(
+                            "pubmed_ids", []
+                        ),
+                    },
+                })
+
+        # -------------------------------------------------
         # Molecular consequences
         # -------------------------------------------------
 
@@ -181,14 +329,19 @@ def main():
             so_id = consequence.get("so_id")
 
             if so_id:
-                mechanism_id = f"SO:{so_id.split(':')[-1]}"
+                mechanism_id = (
+                    f"SO:{so_id.split(':')[-1]}"
+                )
             else:
                 slug = (
                     label.lower()
                     .replace(" ", "_")
                     .replace("/", "_")
                 )
-                mechanism_id = f"PROV:mechanism:{slug}"
+
+                mechanism_id = (
+                    f"PROV:mechanism:{slug}"
+                )
 
             if mechanism_id not in nodes:
                 nodes[mechanism_id] = {
@@ -227,6 +380,7 @@ def main():
                     record.get("variation_name")
                     or record.get("clinvar_accession")
                 ),
+
                 "object_label": label,
             })
 
@@ -253,35 +407,63 @@ def main():
 
     nodes_list = list(nodes.values())
 
-    write_jsonl(NODES_OUT, nodes_list)
-    write_jsonl(EDGES_OUT, unique_edges)
+    # -----------------------------------------------------
+    # Write output
+    # -----------------------------------------------------
+
+    write_jsonl(
+        NODES_OUT,
+        nodes_list,
+    )
+
+    write_jsonl(
+        EDGES_OUT,
+        unique_edges,
+    )
 
     # -----------------------------------------------------
     # Stats
     # -----------------------------------------------------
 
     variant_count = sum(
-        1 for n in nodes_list
+        1
+        for n in nodes_list
         if n["type"] == "variant"
     )
 
     gene_count = sum(
-        1 for n in nodes_list
+        1
+        for n in nodes_list
         if n["type"] == "gene"
     )
 
+    disease_count = sum(
+        1
+        for n in nodes_list
+        if n["type"] == "disease"
+    )
+
     mechanism_count = sum(
-        1 for n in nodes_list
+        1
+        for n in nodes_list
         if n["type"] == "mechanism"
     )
 
     has_variant_count = sum(
-        1 for e in unique_edges
+        1
+        for e in unique_edges
         if e["predicate"] == "has_variant"
     )
 
+    variant_disease_count = sum(
+        1
+        for e in unique_edges
+        if e["predicate"] == "variant_associated_with"
+    )
+
     consequence_count = sum(
-        1 for e in unique_edges
+        1
+        for e in unique_edges
         if e["predicate"] == "has_molecular_consequence"
     )
 
@@ -291,9 +473,15 @@ def main():
     print(f"Records:                  {len(records)}")
     print(f"Variant nodes:            {variant_count}")
     print(f"Gene nodes:               {gene_count}")
+    print(f"Disease nodes:            {disease_count}")
     print(f"Mechanism nodes:          {mechanism_count}")
     print(f"has_variant edges:        {has_variant_count}")
-    print(f"Molecular consequence:    {consequence_count}")
+    print(
+        f"Variant-disease edges:    {variant_disease_count}"
+    )
+    print(
+        f"Molecular consequence:    {consequence_count}"
+    )
     print(f"Total nodes:              {len(nodes_list)}")
     print(f"Total edges:              {len(unique_edges)}")
     print()

@@ -36,7 +36,7 @@ DATA = Path("data")
 # IMPORTANT:
 # Keep this as v2 so your existing successful Anthropic extraction
 # cache continues to be reused.
-CACHE_TAG = "v7"
+CACHE_TAG = "v8"
 
 
 EntityType = Literal[
@@ -1090,6 +1090,34 @@ def make_edge(
     Optional[Edge],
     Optional[str],
 ]:
+    ALLOWED_GRAPH_PREDICATES = {
+        "causes",
+        "associated_with",
+        "has_phenotype",
+        "disrupts_pathway",
+        "treats",
+        "studied_in",
+        "involves_intervention",
+        "tests",
+        "authored",
+        "funded_by",
+        "reports_trial",
+        "tagged_with",
+        "has_variant",
+        "variant_in_gene",
+        "variant_associated_with",
+        "has_molecular_consequence",
+        "involved_in_pathway",
+        "has_mechanism",
+        "affects_mechanism",
+        "led_by",
+        "has_registry",
+        "conducted_at",
+        "supported_by",
+    }
+
+    if c.predicate not in ALLOWED_GRAPH_PREDICATES:
+        return None, "unsupported_predicate"
     
     if not valid_predicate_direction(c):
         return None, "invalid_predicate_direction"
